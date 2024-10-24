@@ -95,6 +95,60 @@ Resources:
             Resource: 
               - !GetAtt UsuarioSQS.Arn  # ARN de la cola SQS
       Timeout: 10   
+  
+  
+  LambdaEliminarUsuario:
+    Type: AWS::Serverless::Function
+    Condition: CreateLambdaCondition
+    Properties:
+      Handler: index.handler  
+      Runtime: nodejs20.x
+      CodeUri: C:\pragma\eliminarUsuarioNodeLambda 
+      Events:
+        DeleteUser:
+          Type: HttpApi
+          Properties:
+            Path: /eliminar
+            Method: delete  
+      Policies:
+        - DynamoDBCrudPolicy: 
+            TableName: !Ref UsuarioTable  
+        - SQSSendMessagePolicy: 
+            QueueName: !Ref UsuarioSQS  
+        - Statement:
+            Effect: Allow
+            Action:
+              - "sqs:*"  # Permitir todas las acciones de SQS
+            Resource: 
+              - !GetAtt UsuarioSQS.Arn  # ARN de la cola SQS
+      Timeout: 10   
+      
+  LambdaActializarUsuario:
+    Type: AWS::Serverless::Function
+    Condition: CreateLambdaCondition
+    Properties:
+      Handler: index.handler  
+      Runtime: nodejs20.x
+      CodeUri: C:\pragma\actualizarUsuarioNodeLambda
+      Events:
+        DeleteUser:
+          Type: HttpApi
+          Properties:
+            Path: /actualizar
+            Method: put  
+      Policies:
+        - DynamoDBCrudPolicy: 
+            TableName: !Ref UsuarioTable  
+        - SQSSendMessagePolicy: 
+            QueueName: !Ref UsuarioSQS  
+        - Statement:
+            Effect: Allow
+            Action:
+              - "sqs:*"  # Permitir todas las acciones de SQS
+            Resource: 
+              - !GetAtt UsuarioSQS.Arn  # ARN de la cola SQS
+      Timeout: 10   
+ 
 
 Conditions:
   CreateLambdaCondition: !Equals [!Ref CreateLambda, "true"]

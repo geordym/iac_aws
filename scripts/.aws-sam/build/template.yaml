@@ -98,6 +98,37 @@ Resources:
       Timeout: 10
     Metadata:
       SamResourceId: LambdaCrearUsuario
+  LambdaEliminarUsuario:
+    Type: AWS::Serverless::Function
+    Condition: CreateLambdaCondition
+    Properties:
+      Handler: eliminarUsuarios.handler
+      Runtime: nodejs20.x
+      CodeUri: LambdaEliminarUsuario
+      Events:
+        DeleteUser:
+          Type: HttpApi
+          Properties:
+            Path: /eliminar
+            Method: delete
+      Policies:
+      - DynamoDBCrudPolicy:
+          TableName:
+            Ref: UsuarioTable
+      - SQSSendMessagePolicy:
+          QueueName:
+            Ref: UsuarioSQS
+      - Statement:
+          Effect: Allow
+          Action:
+          - sqs:*
+          Resource:
+          - Fn::GetAtt:
+            - UsuarioSQS
+            - Arn
+      Timeout: 10
+    Metadata:
+      SamResourceId: LambdaEliminarUsuario
 Conditions:
   CreateLambdaCondition:
     Fn::Equals:

@@ -18,4 +18,13 @@ manifest_hash = ""
 packagetype = "Zip"
 functions = ["LambdaCrearUsuario"]
 
+[function_build_definitions.cc887e7f-5a9b-4771-b045-235d7ba02a53]
+codeuri = "C:\\pragma\\actualizarUsuarioNodeLambda"
+runtime = "nodejs20.x"
+architecture = "x86_64"
+handler = "eliminarUsuarios.handler"
+manifest_hash = ""
+packagetype = "Zip"
+functions = ["LambdaEliminarUsuario"]
+
 [layer_build_definitions]
