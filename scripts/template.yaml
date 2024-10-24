@@ -1,0 +1,95 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Serverless application with DynamoDB table and SQS
+
+Parameters:
+  CreateLambda:
+    Type: String
+    Default: "true"
+    AllowedValues:
+      - "true"
+      - "false"
+    Description: "Indica si se debe crear la función Lambda."
+
+  CreateTable:
+    Type: String
+    Default: "true"
+    AllowedValues:
+      - "true"
+      - "false"
+    Description: "Indica si se debe crear la tabla DynamoDB."
+
+Resources:
+  LambdaListaUsuarios:
+    Type: AWS::Serverless::Function
+    Condition: CreateLambdaCondition
+    Properties:
+      Handler: org.example.LambdaListaUsuarios::handleRequest  
+      Runtime: java17
+      CodeUri: C:\pragma\listarUsuariosJavaLambda2  
+      Events:
+        HelloWorld:
+          Type: HttpApi
+          Properties:
+            Path: /listar
+            Method: get  
+      Policies:
+        - DynamoDBCrudPolicy: 
+            TableName: !Ref UsuarioTable  # Referencia a la tabla
+      Timeout: 10  # Timeout de 10 segundos
+      
+  LambdaCrearUsuario:
+    Type: AWS::Serverless::Function
+    Condition: CreateLambdaCondition
+    Properties:
+      Handler: org.example.CrearUsuarioLambda::handleRequest  
+      Runtime: java17
+      CodeUri: C:\pragma\tt\crearUsuarioLambda 
+      Events:
+        HelloWorld:
+          Type: HttpApi
+          Properties:
+            Path: /crear
+            Method: post  
+      Policies:
+        - DynamoDBCrudPolicy: 
+            TableName: !Ref UsuarioTable  
+        - SQSSendMessagePolicy: 
+            QueueName: !Ref UsuarioSQS  # Permitir el envío de mensajes a la cola SQS
+      Timeout: 10   
+
+  UsuarioTable:
+    Type: AWS::DynamoDB::Table
+    Condition: CreateTableCondition
+    Properties:
+      TableName: usuarios_tabla
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S  # S = String
+        - AttributeName: telefono
+          AttributeType: S  # S = String
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH  # Clave primaria
+      GlobalSecondaryIndexes:
+        - IndexName: TelefonoIndex
+          KeySchema:
+            - AttributeName: telefono
+              KeyType: HASH  # Clave del índice
+          Projection:
+            ProjectionType: ALL
+          ProvisionedThroughput:
+            ReadCapacityUnits: 5
+            WriteCapacityUnits: 5
+      ProvisionedThroughput:
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5
+
+  UsuarioSQS:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: UsuarioSQS_test  
+
+Conditions:
+  CreateLambdaCondition: !Equals [!Ref CreateLambda, "true"]
+  CreateTableCondition: !Equals [!Ref CreateTable, "true"]
