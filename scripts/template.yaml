@@ -20,6 +20,38 @@ Parameters:
     Description: "Indica si se debe crear la tabla DynamoDB."
 
 Resources:
+  UsuarioTable:
+    Type: AWS::DynamoDB::Table
+    Condition: CreateTableCondition
+    Properties:
+      TableName: usuarios_tabla
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S  # S = String
+        - AttributeName: telefono
+          AttributeType: S  # S = String
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH  # Clave primaria
+      GlobalSecondaryIndexes:
+        - IndexName: TelefonoIndex
+          KeySchema:
+            - AttributeName: telefono
+              KeyType: HASH  # Clave del índice
+          Projection:
+            ProjectionType: ALL
+          ProvisionedThroughput:
+            ReadCapacityUnits: 5
+            WriteCapacityUnits: 5
+      ProvisionedThroughput:
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5
+
+  UsuarioSQS:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: UsuarioSQS_test  # Nombre de la cola
+
   LambdaListaUsuarios:
     Type: AWS::Serverless::Function
     Condition: CreateLambdaCondition
@@ -56,39 +88,13 @@ Resources:
             TableName: !Ref UsuarioTable  
         - SQSSendMessagePolicy: 
             QueueName: !Ref UsuarioSQS  # Permitir el envío de mensajes a la cola SQS
+        - Statement:
+            Effect: Allow
+            Action:
+              - "sqs:*"  # Permitir todas las acciones de SQS
+            Resource: 
+              - !GetAtt UsuarioSQS.Arn  # ARN de la cola SQS
       Timeout: 10   
-
-  UsuarioTable:
-    Type: AWS::DynamoDB::Table
-    Condition: CreateTableCondition
-    Properties:
-      TableName: usuarios_tabla
-      AttributeDefinitions:
-        - AttributeName: id
-          AttributeType: S  # S = String
-        - AttributeName: telefono
-          AttributeType: S  # S = String
-      KeySchema:
-        - AttributeName: id
-          KeyType: HASH  # Clave primaria
-      GlobalSecondaryIndexes:
-        - IndexName: TelefonoIndex
-          KeySchema:
-            - AttributeName: telefono
-              KeyType: HASH  # Clave del índice
-          Projection:
-            ProjectionType: ALL
-          ProvisionedThroughput:
-            ReadCapacityUnits: 5
-            WriteCapacityUnits: 5
-      ProvisionedThroughput:
-        ReadCapacityUnits: 5
-        WriteCapacityUnits: 5
-
-  UsuarioSQS:
-    Type: AWS::SQS::Queue
-    Properties:
-      QueueName: UsuarioSQS_test  
 
 Conditions:
   CreateLambdaCondition: !Equals [!Ref CreateLambda, "true"]

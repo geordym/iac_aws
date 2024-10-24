@@ -17,6 +17,36 @@ Parameters:
     - 'false'
     Description: Indica si se debe crear la tabla DynamoDB.
 Resources:
+  UsuarioTable:
+    Type: AWS::DynamoDB::Table
+    Condition: CreateTableCondition
+    Properties:
+      TableName: usuarios_tabla
+      AttributeDefinitions:
+      - AttributeName: id
+        AttributeType: S
+      - AttributeName: telefono
+        AttributeType: S
+      KeySchema:
+      - AttributeName: id
+        KeyType: HASH
+      GlobalSecondaryIndexes:
+      - IndexName: TelefonoIndex
+        KeySchema:
+        - AttributeName: telefono
+          KeyType: HASH
+        Projection:
+          ProjectionType: ALL
+        ProvisionedThroughput:
+          ReadCapacityUnits: 5
+          WriteCapacityUnits: 5
+      ProvisionedThroughput:
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5
+  UsuarioSQS:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: UsuarioSQS_test
   LambdaListaUsuarios:
     Type: AWS::Serverless::Function
     Condition: CreateLambdaCondition
@@ -57,39 +87,17 @@ Resources:
       - SQSSendMessagePolicy:
           QueueName:
             Ref: UsuarioSQS
+      - Statement:
+          Effect: Allow
+          Action:
+          - sqs:*
+          Resource:
+          - Fn::GetAtt:
+            - UsuarioSQS
+            - Arn
       Timeout: 10
     Metadata:
       SamResourceId: LambdaCrearUsuario
-  UsuarioTable:
-    Type: AWS::DynamoDB::Table
-    Condition: CreateTableCondition
-    Properties:
-      TableName: usuarios_tabla
-      AttributeDefinitions:
-      - AttributeName: id
-        AttributeType: S
-      - AttributeName: telefono
-        AttributeType: S
-      KeySchema:
-      - AttributeName: id
-        KeyType: HASH
-      GlobalSecondaryIndexes:
-      - IndexName: TelefonoIndex
-        KeySchema:
-        - AttributeName: telefono
-          KeyType: HASH
-        Projection:
-          ProjectionType: ALL
-        ProvisionedThroughput:
-          ReadCapacityUnits: 5
-          WriteCapacityUnits: 5
-      ProvisionedThroughput:
-        ReadCapacityUnits: 5
-        WriteCapacityUnits: 5
-  UsuarioSQS:
-    Type: AWS::SQS::Queue
-    Properties:
-      QueueName: UsuarioSQS_test
 Conditions:
   CreateLambdaCondition:
     Fn::Equals:
